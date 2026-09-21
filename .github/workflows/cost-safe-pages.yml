@@ -28,8 +28,13 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install pytest
       - run: python -m pytest -q tests/test_cost_safe_contract.py
-      - run: |
-          node --check cost-safe/teacher.js\n          node --check cost-safe/student.js\n          node --check cost-safe/app.js
+      - name: Check teacher JS
+        run: node --check cost-safe/teacher.js
+      - name: Check student JS
+        run: node --check cost-safe/student.js
+      - name: Check prototype JS
+        run: |
+          node --check cost-safe/app.js
           node --check cost-safe/prototype.js
 
   deploy:
