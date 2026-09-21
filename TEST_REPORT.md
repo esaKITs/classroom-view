@@ -1,36 +1,52 @@
 # esaKITs / Classroom View Test Report
 
-Date: 2026-09-21
+Date: 2026-09-22
 
-## Automated
+## Historical v1.4 reference tests
 
-- `pytest -q`: **11 passed**
+The following results are historical results for the local v1.4 reference implementation. They do **not** establish general-public deployment safety or real classroom operation.
+
+- `pytest -q`: 18 passed
 - `node --check static/teacher.js`: PASS
 - `node --check static/student.js`: PASS
 - `python -m py_compile server.py`: PASS
+- ZIP integrity: PASS
 
-Covered by automated tests include: exact 45-seat default map; three unavailable positions; seats 01–45; 12×12 and 11+11 aisle limits; vertical/horizontal numbering; ID validation/normalization; Katakana validation; Class persistence API; fixed Class URL; Session start/end; duplicate seat acceptance; unavailable seat rejection; teacher seat correction; student-facing privacy; CSV; teacher/student WebSocket connection; share-state; heartbeat; raise hand/Yes; teacher message; teacher reconnect; static UI contracts for PNG, view modes and 180° student seat map.
+Historical automated coverage included the 45-seat map, layout limits, validation, Class/Session APIs, duplicate seats, seat correction, privacy contracts, CSV, WebSocket signaling/state, PNG/view modes, round tables, bilingual student UI, and tablet contracts.
 
-## Important production limitation
+## v1.5 cost-safe public edition
 
-Automated tests validate application logic and signaling contracts, not 45 simultaneous real browsers/video encoders. Production-scale media requires HTTPS/TURN and preferably an SFU.
+Status: **UNVERIFIED / 未検証**
 
+No claim is made yet that the cost-safe public edition is complete, production-ready, generally deployed, or capable of 40–48 simultaneous real users.
 
-## v1.1 丸テーブル型追加テスト
-- pytest: 13 passed
-- teacher.js: node --check PASS
-- student.js: node --check PASS
-- 2段×3列・6卓・18席の採番とseat_positionを自動テスト済み。
+### Cost Safety Test
 
+| Check | Status |
+|---|---|
+| No author-billable application host | DESIGN REQUIREMENT — implementation unverified |
+| No author-billable database | DESIGN REQUIREMENT — implementation unverified |
+| No author-billable signaling service | DESIGN REQUIREMENT — implementation unverified |
+| No author-billable TURN/SFU | DESIGN REQUIREMENT — implementation unverified |
+| No author-billable API/storage | DESIGN REQUIREMENT — implementation unverified |
+| Bot/session-flood cannot create author charges | UNVERIFIED |
+| Long connections cannot create author charges | UNVERIFIED |
+| Traffic spike cannot create author charges | UNVERIFIED |
 
-## v1.2 学生側日英併記
-- pytest: 15 passed
-- teacher.js / student.js: node --check PASS
-- 学生側主要UI・動的メッセージの日英併記を静的テスト済み。
+### Functional/public-operation gate
 
-## v1.3 タブレット対応
-- pytest: 18 passed
-- teacher.js / student.js: node --check PASS
-- 教師11インチ級横向きタブレット用レスポンシブCSS契約テスト PASS
-- 学生タブレット自動判別・代替参加契約テスト PASS
-- 教師側端末種別／外部共有待機表示契約テスト PASS
+| Check | Status |
+|---|---|
+| Static public frontend | UNVERIFIED |
+| Real teacher + student browsers | UNVERIFIED |
+| Multi-device WebRTC | UNVERIFIED |
+| Signaling without billable backend | UNVERIFIED |
+| University NAT/firewall/proxy | UNVERIFIED |
+| TURN-free/zero-cost failure behavior | UNVERIFIED |
+| 40–48 participant load | UNVERIFIED |
+| Security/abuse review | UNVERIFIED |
+| Public URL end-to-end operation | UNVERIFIED |
+
+## Release wording rule
+
+Until every applicable gate has direct execution evidence, do not use PASS, complete, verified, production-ready, or 48-user-ready for the cost-safe public edition.
