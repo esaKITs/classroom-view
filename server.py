@@ -1,6 +1,7 @@
 import csv, io, asyncio, json, os, re, secrets, time
 from pathlib import Path
 from typing import Dict, Any
+from urllib.parse import urlsplit
 from aiohttp import web, WSMsgType
 
 BASE=Path(__file__).resolve().parent; STATIC=BASE/'static'
@@ -37,6 +38,21 @@ TABLE_LAYOUT_PRESET={
 DEFAULT_DISPLAY={'seat':True,'student_id':True,'surname':True,'given_name':True,'joined_at':False,'connected':False}
 
 def now(): return time.time()
+
+def public_origin(request):
+ # Use a configured external origin behind HTTPS-terminating proxies.
+ # Do not trust client-supplied forwarding headers.
+ origin=os.environ.get('PUBLIC_BASE_URL','').strip()
+ if not origin:
+  domain=os.environ.get('RAILWAY_PUBLIC_DOMAIN','').strip()
+  if domain:origin='https://'+domain
+ if not origin:return f'{request.scheme}://{request.host}'
+ parsed=urlsplit(origin)
+ if parsed.scheme not in ('http','https') or not parsed.hostname or parsed.username is not None or parsed.password is not None or parsed.path not in ('','/') or parsed.query or parsed.fragment:
+  raise ValueError('PUBLIC_BASE_URL must be an HTTP(S) origin without a path or credentials')
+ parsed.port  # Validate an optional port.
+ return origin.rstrip('/')
+
 def code(n=6):
  a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return ''.join(secrets.choice(a) for _ in range(n))
 def token(n=24): return secrets.token_urlsafe(n)
@@ -125,12 +141,12 @@ async def teacher_page(r): return web.FileResponse(STATIC/'teacher.html')
 async def student_page(r): return web.FileResponse(STATIC/'student.html')
 
 async def list_classes(request):
- return web.json_response([{'class_code':c['class_code'],'title':c['title'],'student_url':f"{request.scheme}://{request.host}/class/{c['class_code']}"} for c in CLASSES.values()])
+ return web.json_response([{'class_code':c['class_code'],'title':c['title'],'student_url':f"{public_origin(request)}/class/{c['class_code']}"} for c in CLASSES.values()])
 async def create_class(request):
  d=await request.json(); cc=code(6)
  while cc in CLASSES:cc=code(6)
  c={'class_code':cc,'title':(d.get('title') or '授業').strip()[:80],'layout':default_layout(),'display_settings':clone(DEFAULT_DISPLAY),'created_at':now()};CLASSES[cc]=c;persist()
- return web.json_response({**c,'student_url':f"{request.scheme}://{request.host}/class/{cc}"})
+ return web.json_response({**c,'student_url':f"{public_origin(request)}/class/{cc}"})
 async def get_class(request):
  c=CLASSES.get(request.match_info['cc']);
  if not c: raise web.HTTPNotFound(text='授業がありません')
@@ -165,11 +181,11 @@ async def start_class_session(request):
  c=CLASSES.get(request.match_info['cc']);
  if not c:raise web.HTTPNotFound()
  for s in SESSIONS.values():
-  if s.get('class_code')==c['class_code'] and s.get('active'): return web.json_response({'session_id':s['session_id'],'teacher_token':s['teacher_token'],'recovery_code':s['recovery_code'],'join_url':f"{request.scheme}://{request.host}/class/{c['class_code']}"})
+  if s.get('class_code')==c['class_code'] and s.get('active'): return web.json_response({'session_id':s['session_id'],'teacher_token':s['teacher_token'],'recovery_code':s['recovery_code'],'join_url':f"{public_origin(request)}/class/{c['class_code']}"})
  sid=code(6)
  while sid in SESSIONS:sid=code(6)
  s={'session_id':sid,'class_code':c['class_code'],'title':c['title'],'layout':clone(c['layout']),'teacher_token':token(),'recovery_code':recovery_code(),'created_at':now(),'active':True,'teacher_present':False,'teacher_share_active':False,'participants':{}}
- SESSIONS[sid]=s;STUDENT_WS[sid]={};persist();return web.json_response({'session_id':sid,'teacher_token':s['teacher_token'],'recovery_code':s['recovery_code'],'join_url':f"{request.scheme}://{request.host}/class/{c['class_code']}"})
+ SESSIONS[sid]=s;STUDENT_WS[sid]={};persist();return web.json_response({'session_id':sid,'teacher_token':s['teacher_token'],'recovery_code':s['recovery_code'],'join_url':f"{public_origin(request)}/class/{c['class_code']}"})
 
 # v0.1-compatible quick create: creates a persistent class then starts it.
 async def create_session(request):
