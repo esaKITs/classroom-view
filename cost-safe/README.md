@@ -40,3 +40,6 @@ With no STUN/TURN, direct connection can fail across NAT/firewall boundaries. Th
 Static zero-backend prototype: implemented.
 Real network validation: UNVERIFIED.
 40–48 participant validation: UNVERIFIED.
+
+
+<!-- Pages deployment retry marker: environment branch permission enabled -->
