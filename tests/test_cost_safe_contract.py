@@ -1,34 +1,14 @@
 from pathlib import Path
-
 ROOT=Path(__file__).resolve().parents[1]
-FILES=[
-    ROOT/'cost-safe'/'index.html',
-    ROOT/'cost-safe'/'app.js',
-    ROOT/'cost-safe'/'prototype.html',
-    ROOT/'cost-safe'/'prototype.js',
-]
+FILES=[ROOT/'cost-safe'/x for x in ['index.html','teacher.html','student.html','teacher.js','student.js','common.css','teacher.css','student.css']]
 COMBINED='\n'.join(p.read_text(encoding='utf-8') for p in FILES)
-
-def test_cost_safe_files_exist():
-    assert all(p.exists() for p in FILES)
-
-def test_no_billable_backend_or_relay_contract():
-    forbidden=[
-        'firebase','supabase','railway','render.com','vercel',
-        'wss://','ws://','turn:','turns:','stun:',
-        'googleapis.com','amazonaws.com'
-    ]
-    low=COMBINED.lower()
-    for token in forbidden:
-        assert token not in low, token
-
-def test_peer_has_no_ice_servers():
-    assert 'RTCPeerConnection({iceServers:[]})' in COMBINED
-
-def test_manual_signaling_and_screen_capture_present():
-    for token in ['createOffer','createAnswer','setRemoteDescription','getDisplayMedia']:
-        assert token in COMBINED
-
-def test_no_runtime_fetch_or_xhr():
-    assert 'fetch(' not in COMBINED
-    assert 'XMLHttpRequest' not in COMBINED
+def test_files_exist(): assert all(p.exists() for p in FILES)
+def test_no_author_billable_infrastructure():
+ low=COMBINED.lower()
+ for token in ['firebase','supabase','railway','render.com','vercel','turn:','turns:','amazonaws.com']: assert token not in low,token
+def test_static_global_signaling_and_screen_capture():
+ for token in ['peerjs','getdisplaymedia','peer.call','peer.connect']: assert token in COMBINED.lower(),token
+def test_no_app_backend_calls():
+ low=COMBINED.lower(); assert 'fetch(' not in low; assert 'xmlhttprequest' not in low; assert 'websocket(' not in low
+def test_core_classroom_controls_present():
+ for token in ['参加url','全員へ短信','yes/no解除','教師画面共有','授業終了','挙手','csv']: assert token.lower() in COMBINED.lower(),token
