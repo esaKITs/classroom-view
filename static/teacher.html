@@ -20,10 +20,15 @@
       <p id="resumeHint" class="resume-hint hidden"></p>
     </div>
   </div>
+
   <main id="teacherApp" class="hidden">
-    <header class="micro-header"><span id="className"></span><span id="participantCount" class="muted"></span></header>
+    <header class="micro-header">
+      <span id="className"></span>
+      <span id="participantCount" class="muted"></span>
+    </header>
     <section id="seatGrid" class="seat-grid" aria-label="学生画面一覧"></section>
     <div class="teacher-desk"><span class="desk-label">教卓</span><strong id="deskClassName"></strong><time id="classClock">--:--</time></div>
+
     <button id="menuHandle" class="menu-handle" aria-label="メニューを開く">⌃</button>
     <nav id="bottomBar" class="bottom-bar collapsed" aria-label="教師メニュー">
       <button class="bar-btn" id="joinInfoBtn">参加URL</button>
@@ -32,16 +37,29 @@
       <button class="bar-btn" id="messageAllBtn">全員へ短信</button><button class="bar-btn" id="snapshotBtn">PNG保存</button><button class="bar-btn" id="csvBtn">CSV</button><button class="bar-btn" id="backupBtn">バックアップ</button>
       <button class="bar-btn" id="resetAnswersBtn">Yes/No解除</button>
       <button class="bar-btn" id="shareTeacherBtn">教師画面共有</button>
-      <div class="bar-spacer"></div><button class="bar-btn end-btn" id="endClassBtn">授業終了</button>
+      <div class="bar-spacer"></div>
+      <button class="bar-btn end-btn" id="endClassBtn">授業終了</button>
     </nav>
     <footer class="product-footer">© 2026 Tetsuya Esaki / esaKITs — Enhanced Smart AI Kits · Non-Commercial License</footer>
   </main>
+
   <div id="focusOverlay" class="focus-overlay hidden">
     <video id="focusVideo" autoplay playsinline muted></video>
-    <div class="focus-top"><button id="focusBack" class="overlay-btn">‹ 一覧</button><div id="focusLabel"></div></div>
-    <div class="focus-bottom-wrap"><div id="focusIncoming" class="focus-incoming hidden"></div><div class="focus-bottom"><input id="focusMessage" placeholder="この学生に短いメッセージ"><button id="focusSend" class="overlay-btn">送信</button></div></div>
+    <div class="focus-top">
+      <button id="focusBack" class="overlay-btn">‹ 一覧</button>
+      <div id="focusLabel"></div>
+    </div>
+    <div class="focus-bottom-wrap">
+      <div id="focusIncoming" class="focus-incoming hidden"></div>
+      <div class="focus-bottom">
+        <input id="focusMessage" placeholder="この学生に短いメッセージ">
+        <button id="focusSend" class="overlay-btn">送信</button>
+      </div>
+    </div>
   </div>
-  <div id="modalRoot"></div><div id="toasts" class="toast-stack"></div>
+
+  <div id="modalRoot"></div>
+  <div id="toasts" class="toast-stack"></div>
 </div>
 <script type="module" src="/static/teacher.js"></script>
 </body>

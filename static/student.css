@@ -1,19 +1,48 @@
 html,body { overflow:hidden; }
 .join-screen { min-height:100%; display:grid; place-items:center; padding:18px; }
 .join-card { width:min(430px,94vw); background:#fff; border:1px solid var(--line); border-radius:20px; padding:24px; }
-.join-card h1 { margin:0 0 16px; font-size:23px; }.join-card .icon-btn { width:100%; }.join-card p { font-size:12px; }
+.join-card h1 { margin:0 0 16px; font-size:23px; }
+.join-card .icon-btn { width:100%; }
+.join-card p { font-size:12px; }
 .student-app { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:18px 18px 90px; }
-.self-panel { display:grid; justify-items:center; gap:8px; }.self-panel video { width:min(160px,32vw); aspect-ratio:16/9; object-fit:contain; background:#151518; border-radius:8px; border:1px solid var(--line); }
-.share-state { font-size:13px; color:var(--muted); }#shareDot { color:var(--ok); font-size:10px; }
+.self-panel { display:grid; justify-items:center; gap:8px; }
+.self-panel video { width:min(160px,32vw); aspect-ratio:16/9; object-fit:contain; background:#151518; border-radius:8px; border:1px solid var(--line); }
+.share-state { font-size:13px; color:var(--muted); }
+#shareDot { color:var(--ok); font-size:10px; }
 .teacher-message { max-width:min(620px,90vw); padding:10px 14px; background:#fff; border:1px solid var(--line); border-radius:12px; font-size:14px; }
 .student-controls { position:fixed; left:50%; bottom:max(12px, env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; align-items:center; gap:6px; background:rgba(250,250,252,.94); border:1px solid var(--line); border-radius:15px; padding:6px; }
-.student-btn { border:none; background:transparent; border-radius:10px; padding:9px 12px; font-size:13px; white-space:nowrap; }.student-btn.active { background:var(--accent); color:#fff; }
-.teacher-share { position:fixed; inset:0; z-index:80; background:#09090b; }.teacher-share video { width:100%; height:100%; object-fit:contain; }
+.student-btn { border:none; background:transparent; border-radius:10px; padding:9px 12px; font-size:13px; white-space:nowrap; }
+.student-btn.active { background:var(--accent); color:#fff; }
+.teacher-share { position:fixed; inset:0; z-index:80; background:#09090b; }
+.teacher-share video { width:100%; height:100%; object-fit:contain; }
 .teacher-share-tag { position:absolute; top:10px; left:10px; background:rgba(20,20,24,.68); color:#fff; border-radius:8px; padding:5px 8px; font-size:11px; }
 .teacher-share-controls { position:absolute; bottom:max(10px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); display:flex; gap:4px; background:rgba(20,20,24,.58); border-radius:13px; padding:5px; }
-.teacher-share-controls .student-btn { color:#fff; }.teacher-share-controls .student-btn.active { background:var(--accent); }
-@media(max-width:520px){.student-controls .student-btn { padding:9px 10px; }.self-panel video { width:min(145px,42vw); }}
+.teacher-share-controls .student-btn { color:#fff; }
+.teacher-share-controls .student-btn.active { background:var(--accent); }
+@media(max-width:520px){
+  .student-controls .student-btn { padding:9px 10px; }
+  .self-panel video { width:min(145px,42vw); }
+}
 .student-seat-map{display:grid;gap:5px;transform:rotate(180deg);margin:10px 0}.student-seat{min-height:34px;border:1px solid var(--line);border-radius:7px;background:#f5f5f7;display:grid;place-items:center;transform:rotate(180deg);cursor:pointer}.student-seat.selected{outline:3px solid #0a84ff;background:#eaf4ff}.student-seat.off{visibility:hidden}.student-seat.aisle-v{margin-right:18px}.student-seat.aisle-h{margin-bottom:14px}
-.student-seat-map.student-round-map{display:grid;gap:16px!important}.student-round-unit{position:relative;height:120px;border:1px dashed #ddd;border-radius:14px;background:#fafafa}.student-round-unit .student-seat{position:absolute;width:30%;height:38%}.student-round-unit .table-left{left:4%;top:8%}.student-round-unit .table-right{right:4%;top:8%}.student-round-unit .table-bottom{left:35%;bottom:4%}.student-round-table{position:absolute;left:43%;top:38%;font-size:28px;color:#999}
+
+.student-seat-map.student-round-map{display:grid;gap:16px!important}
+.student-round-unit{position:relative;height:120px;border:1px dashed #ddd;border-radius:14px;background:#fafafa}
+.student-round-unit .student-seat{position:absolute;width:30%;height:38%}
+.student-round-unit .table-left{left:4%;top:8%}.student-round-unit .table-right{right:4%;top:8%}.student-round-unit .table-bottom{left:35%;bottom:4%}
+.student-round-table{position:absolute;left:43%;top:38%;font-size:28px;color:#999}
+
+/* v1.3: 11-inch landscape tablet fallback UI (student) */
 @media (orientation: landscape) and (min-width: 820px) and (max-width: 1400px) and (pointer: coarse) {
-.join-screen{padding:max(12px,env(safe-area-inset-top)) 18px max(12px,env(safe-area-inset-bottom))}.join-card{width:min(920px,94vw);max-height:94vh;overflow:auto;padding:20px 26px}.join-card h1{font-size:22px;margin-bottom:10px}.join-card .row{gap:14px}.join-card input,.icon-btn,.student-btn{min-height:44px;font-size:14px}.student-seat{min-height:40px}.student-seat-map{max-height:44vh}.student-app{padding:14px 18px 84px;gap:12px}.self-panel video{width:min(220px,25vw)}.student-controls{max-width:calc(100vw - 24px);overflow-x:auto;-webkit-overflow-scrolling:touch}.student-btn{padding:10px 16px}.teacher-share-controls .student-btn{min-width:58px}}
+  .join-screen{padding:max(12px,env(safe-area-inset-top)) 18px max(12px,env(safe-area-inset-bottom))}
+  .join-card{width:min(920px,94vw);max-height:94vh;overflow:auto;padding:20px 26px}
+  .join-card h1{font-size:22px;margin-bottom:10px}
+  .join-card .row{gap:14px}
+  .join-card input,.icon-btn,.student-btn{min-height:44px;font-size:14px}
+  .student-seat{min-height:40px}
+  .student-seat-map{max-height:44vh}
+  .student-app{padding:14px 18px 84px;gap:12px}
+  .self-panel video{width:min(220px,25vw)}
+  .student-controls{max-width:calc(100vw - 24px);overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .student-btn{padding:10px 16px}
+  .teacher-share-controls .student-btn{min-width:58px}
+}

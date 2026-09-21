@@ -1,29 +1,281 @@
 const $ = s => document.querySelector(s);
 const toasts = $('#toasts');
 const pathParts=location.pathname.split('/').filter(Boolean);const isClassUrl=pathParts[0]==='class';const classCode=isClassUrl?pathParts[1]:null;let sid=isClassUrl?null:pathParts[pathParts.length-1];
-let session = null, ws = null, iceServers = [], participantId = null, participantToken = null, screenStream = null, screenTrack = null, screenSender = null, pc = null, teacherPresent = false, teacherShareActive = false, hand = false, answer = '', reconnectTimer = null, heartbeatTimer = null;
+let session = null;
+let ws = null;
+let iceServers = [];
+let participantId = null;
+let participantToken = null;
+let screenStream = null;
+let screenTrack = null;
+let screenSender = null;
+let pc = null;
+let teacherPresent = false;
+let teacherShareActive = false;
+let hand = false;
+let answer = '';
+let reconnectTimer = null;
+let heartbeatTimer = null;
 let saved = JSON.parse(localStorage.getItem(`a10_student_${classCode||sid}`) || 'null');
-function toast(text, ms=3000){const n=document.createElement('div'); n.className='toast'; n.textContent=text; toasts.appendChild(n); setTimeout(()=>n.remove(),ms);}
-async function api(path, options={}){const r=await fetch(path,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});if(!r.ok) throw new Error((await r.text()) || `HTTP ${r.status}`);return r.json();}
+
+function toast(text, ms=3000){
+  const n=document.createElement('div'); n.className='toast'; n.textContent=text; toasts.appendChild(n); setTimeout(()=>n.remove(),ms);
+}
+async function api(path, options={}){
+  const r=await fetch(path,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});
+  if(!r.ok) throw new Error((await r.text()) || `HTTP ${r.status}`);
+  return r.json();
+}
 function wsUrl(){ const proto=location.protocol==='https:'?'wss:':'ws:'; return `${proto}//${location.host}/ws/${sid}?role=student&participant_id=${encodeURIComponent(participantId)}&token=${encodeURIComponent(participantToken)}`; }
 function sendWs(payload){ if(ws?.readyState===WebSocket.OPEN)ws.send(JSON.stringify(payload)); }
+
 function seatNoAt(row,col,rows){return col*rows+(rows-row);}
-async function load(){try{session=await api(isClassUrl?`/api/class/${classCode}/public`:`/api/session/${sid}/public`);sid=session.session_id;$('#joinTitle').textContent=session.title||'授業に参加 / Join Class';if(saved){$('#studentId').value=saved.student_id||'';$('#surname').value=saved.surname||'';$('#givenName').value=saved.given_name||'';}populateSeats();try{iceServers=(await api('/api/config')).iceServers||[]}catch{iceServers=[]}}catch(e){$('.join-card').innerHTML=`<h1>参加できません / Unable to join</h1><p>${e.message}</p>`}}
-function populateSeats(){const map=$('#studentSeatMap'),L=session.layout;map.innerHTML='';if(L.type==='round_tables'){map.classList.add('student-round-map');map.style.gridTemplateColumns=`repeat(${L.table_cols||3},1fr)`;const tables=[...(L.tables||[])].sort((a,b)=>b.row-a.row||b.col-a.col);for(const tb of tables){const unit=document.createElement('div');unit.className='student-round-unit';(tb.seats||[]).forEach((n,i)=>{const b=document.createElement('button');b.type='button';b.className=`student-seat table-${i===0?'right':i===1?'bottom':'left'}`;b.textContent=String(n).padStart(2,'0');b.onclick=()=>{document.querySelectorAll('.student-seat').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('#seatSelect').value=n;$('#seatChoice').textContent=`座席 / Seat ${String(n).padStart(2,'0')}`};unit.appendChild(b)});const table=document.createElement('span');table.className='student-round-table';table.textContent='○';unit.appendChild(table);map.appendChild(unit);}}else{map.classList.remove('student-round-map');map.style.gridTemplateColumns=`repeat(${L.cols},1fr)`;const cells=[];for(let r=0;r<L.rows;r++)for(let c=0;c<L.cols;c++)cells.push([r,c]);cells.reverse();for(const [r,c] of cells){const n=L.seat_map[r][c],b=document.createElement('button');b.type='button';b.className='student-seat'+(n==null?' off':'');b.textContent=n==null?'':String(n).padStart(2,'0');if(n!=null)b.onclick=()=>{document.querySelectorAll('.student-seat').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('#seatSelect').value=n;$('#seatChoice').textContent=`座席 / Seat ${String(n).padStart(2,'0')}`};map.appendChild(b)}}if(saved?.seat_no){const btn=[...map.querySelectorAll('.student-seat')].find(x=>Number(x.textContent)===Number(saved.seat_no));if(btn)btn.click()}}
-async function requestScreen(){if(!navigator.mediaDevices?.getDisplayMedia){screenStream=null;screenTrack=null;return {supported:false,ok:false};}try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:2,max:3},width:{ideal:320},height:{ideal:180}},audio:false});screenTrack=screenStream.getVideoTracks()[0];screenTrack.contentHint='detail';try{await screenTrack.applyConstraints({frameRate:{ideal:2,max:3},width:{ideal:320},height:{ideal:180}});}catch{}screenTrack.addEventListener('ended',async()=>{screenTrack=null;screenStream=null;updateShareState(false);if(screenSender){try{await screenSender.replaceTrack(null);}catch{}}});$('#selfPreview').srcObject=screenStream;updateShareState(true);return {supported:true,ok:true};}catch(e){screenStream=null;screenTrack=null;updateShareState(false);return {supported:true,ok:false,error:e};}}
-function updateShareState(ok){$('#shareText').textContent=ok?'画面共有中 / Screen sharing':'画面共有停止 / Screen sharing stopped';$('#shareDot').style.color=ok?'var(--ok)':'var(--danger)';$('#resumeShare').classList.toggle('hidden',ok);sendWs({type:'share_state',active:!!ok});}
-function detectDevice(){const ua=navigator.userAgent||'';const ipad=/iPad/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1);const android=/Android/i.test(ua);const tablet=ipad||(android&&!/Mobile/i.test(ua));if(ipad)return {type:'tablet',label:'iPad',fallback:true};if(tablet)return {type:'tablet',label:'Android tablet',fallback:true};return {type:'desktop',label:'PC',fallback:false};}
-const deviceInfo=detectDevice();document.body.dataset.deviceType=deviceInfo.type;
-async function join(){const student_id=$('#studentId').value.trim(),surname=$('#surname').value.trim(),given_name=$('#givenName').value.trim(),seat_no=Number($('#seatSelect').value);if(!/^[A-Za-z0-9]+$/.test(student_id)){toast('学籍番号は半角英数字で入力してください / Enter the Student ID using ASCII letters and numbers only.');return;}if(!surname||!given_name||!seat_no){toast('学籍番号・姓・名・座席番号を入力してください / Enter your Student ID, family name, given name, and seat number.');return;}$('#joinBtn').disabled=true;$('#joinBtn').textContent='準備中… / Preparing…';const cap=await requestScreen();if(!cap.supported&&!deviceInfo.fallback){toast('この端末のブラウザでは画面全体を共有できないため、参加できません。 / This browser cannot share the required screen, so you cannot join Classroom View.',7000);$('#joinBtn').disabled=false;$('#joinBtn').textContent='参加・画面共有開始 / Join & Share Screen';return;}if(cap.supported&&!cap.ok&&!deviceInfo.fallback){toast('授業に参加するには画面共有を開始してください。 / Start screen sharing to join the class.',6000);$('#joinBtn').disabled=false;$('#joinBtn').textContent='参加・画面共有開始 / Join & Share Screen';return;}if(deviceInfo.fallback&&!cap.ok)toast('タブレット代替モードで参加します。画面共有は教師側で別経路を使用できます。 / Joining in tablet fallback mode. Screen sharing may use a separate teacher-side route.',7000);try{const endpoint=isClassUrl?`/api/class/${classCode}/join`:`/api/session/${sid}/join`;const data=await api(endpoint,{method:'POST',body:JSON.stringify({student_id,surname,given_name,seat_no,device_type:deviceInfo.type,device_label:deviceInfo.label,share_capability:cap.ok?'web':(deviceInfo.fallback?'external':'none'),participant_id:saved?.participant_id,participant_token:saved?.participant_token})});participantId=data.participant_id;participantToken=data.participant_token;saved={participant_id:participantId,participant_token:participantToken,student_id:student_id.toUpperCase(),surname,given_name,seat_no};localStorage.setItem(`a10_student_${classCode||sid}`,JSON.stringify(saved));$('#joinScreen').classList.add('hidden');$('#studentApp').classList.remove('hidden');if(deviceInfo.fallback&&!cap.ok){$('#shareText').textContent='代替タブレットモード / Tablet fallback mode';$('#shareDot').style.color='var(--warn, #b36f0b)';$('#resumeShare').classList.add('hidden');}connectWs();}catch(e){toast(`参加できません / Unable to join: ${e.message}`,5000);$('#joinBtn').disabled=false;$('#joinBtn').textContent='参加・画面共有開始 / Join & Share Screen';}}
-function connectWs(){if(!participantId||!participantToken)return;if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;ws=new WebSocket(wsUrl());ws.onopen=()=>{if(reconnectTimer)clearTimeout(reconnectTimer);if(heartbeatTimer)clearInterval(heartbeatTimer);sendWs({type:'share_state',active:!!screenTrack});sendWs({type:'heartbeat'});heartbeatTimer=setInterval(()=>sendWs({type:'heartbeat'}),2000);};ws.onmessage=async ev=>{const msg=JSON.parse(ev.data);if(msg.type==='welcome'){teacherPresent=!!msg.teacher_present;teacherShareActive=!!msg.teacher_share_active;if(teacherPresent)await ensurePeer(true);}else if(msg.type==='teacher_presence'){teacherPresent=!!msg.present;if(teacherPresent)await ensurePeer(true);else closePeerAndTeacherView();}else if(msg.type==='signal')await handleSignal(msg.data);else if(msg.type==='quality')await applyQuality(msg.mode);else if(msg.type==='teacher_message')showTeacherMessage(msg.text);else if(msg.type==='teacher_share_state'){teacherShareActive=!!msg.active;updateTeacherShareVisibility();}else if(msg.type==='answer_reset'){answer='';updateControls();}else if(msg.type==='layout_updated')session=msg.session;else if(msg.type==='session_ended'){document.body.dataset.ended='1';if(heartbeatTimer)clearInterval(heartbeatTimer);if(reconnectTimer)clearTimeout(reconnectTimer);if(pc){try{pc.close();}catch{}pc=null;}screenSender=null;localStorage.removeItem(`a10_student_${classCode||sid}`);document.body.innerHTML='<div style="display:grid;place-items:center;height:100%;font-family:sans-serif"><div><h2>授業は終了しました / Class has ended</h2><p>この画面を閉じてください。 / You may close this window.</p></div></div>';}};ws.onclose=()=>{if(heartbeatTimer)clearInterval(heartbeatTimer);heartbeatTimer=null;if(document.body.dataset.ended)return;reconnectTimer=setTimeout(connectWs,1200);};}
-async function ensurePeer(forceOffer=false){if(pc&&['closed','failed'].includes(pc.connectionState)){try{pc.close();}catch{}pc=null;screenSender=null;}if(!pc){pc=new RTCPeerConnection({iceServers});const transceiver=pc.addTransceiver('video',{direction:'sendrecv'});screenSender=transceiver.sender;if(screenTrack){try{await screenSender.replaceTrack(screenTrack);}catch{}}pc.onicecandidate=e=>{if(e.candidate)sendWs({type:'signal',data:{candidate:e.candidate}});};pc.ontrack=e=>{const stream=e.streams[0]||new MediaStream([e.track]);$('#teacherVideo').srcObject=stream;updateTeacherShareVisibility(true);};}else if(screenTrack&&screenSender&&screenSender.track!==screenTrack){try{await screenSender.replaceTrack(screenTrack);}catch{}}if(!forceOffer&&pc.localDescription)return;if(pc.signalingState!=='stable')return;try{const offer=await pc.createOffer(forceOffer?{iceRestart:true}:undefined);await pc.setLocalDescription(offer);sendWs({type:'signal',data:{description:pc.localDescription}});}catch(e){console.warn(e);}}
-async function handleSignal(data){if(!pc)await ensurePeer(false);try{if(data.description){const d=data.description;if(d.type==='offer'){if(pc.signalingState!=='stable'){try{await pc.setLocalDescription({type:'rollback'});}catch{}}await pc.setRemoteDescription(d);const a=await pc.createAnswer();await pc.setLocalDescription(a);sendWs({type:'signal',data:{description:pc.localDescription}});}else if(d.type==='answer'&&pc.signalingState==='have-local-offer')await pc.setRemoteDescription(d);}else if(data.candidate){try{await pc.addIceCandidate(data.candidate);}catch{}}}catch(e){console.warn('signal',e);}}
-function closePeerAndTeacherView(){if(pc){try{pc.close();}catch{}pc=null;}screenSender=null;teacherShareActive=false;$('#teacherVideo').srcObject=null;$('#teacherShare').classList.add('hidden');}
-async function applyQuality(mode){if(!screenTrack)return;try{if(mode==='focus')await screenTrack.applyConstraints({width:{ideal:1280},height:{ideal:720},frameRate:{ideal:10,max:12}});else await screenTrack.applyConstraints({width:{ideal:320},height:{ideal:180},frameRate:{ideal:2,max:3}});}catch{}}
-function updateTeacherShareVisibility(forceTrack=false){const hasTrack=!!$('#teacherVideo').srcObject;const show=(teacherShareActive&&hasTrack)||(forceTrack&&teacherShareActive);$('#teacherShare').classList.toggle('hidden',!show);}
-function showTeacherMessage(text){const box=$('#teacherMessage');box.textContent=text;box.classList.remove('hidden');toast(`教師 / Teacher: ${text}`,5000);clearTimeout(showTeacherMessage.timer);showTeacherMessage.timer=setTimeout(()=>box.classList.add('hidden'),12000);}
-function sendState(){sendWs({type:'state',hand,answer});}function updateControls(){for(const id of ['handBtn','shareHandBtn'])$("#"+id).classList.toggle('active',hand);for(const id of ['yesBtn','shareYesBtn'])$("#"+id).classList.toggle('active',answer==='yes');for(const id of ['noBtn','shareNoBtn'])$("#"+id).classList.toggle('active',answer==='no');}
-function toggleHand(){hand=!hand;updateControls();sendState();}function setAnswer(v){answer=answer===v?'':v;updateControls();sendState();}function openMessage(){$('#messageModal').classList.remove('hidden');$('#studentMessageInput').focus();}function closeMessage(){$('#messageModal').classList.add('hidden');}function sendMessage(){const text=$('#studentMessageInput').value.trim();if(text){sendWs({type:'student_message',text});toast('教師へ送信しました / Message sent to teacher');$('#studentMessageInput').value='';}closeMessage();}
-async function resumeShare(){const cap=await requestScreen();if(!cap.ok)return;if(pc&&screenSender){try{await screenSender.replaceTrack(screenTrack);}catch{}}else if(teacherPresent)await ensurePeer(true);}
-$('#joinBtn').addEventListener('click',join);$('#resumeShare').addEventListener('click',resumeShare);for(const id of ['handBtn','shareHandBtn'])$('#'+id).addEventListener('click',toggleHand);for(const id of ['yesBtn','shareYesBtn'])$('#'+id).addEventListener('click',()=>setAnswer('yes'));for(const id of ['noBtn','shareNoBtn'])$('#'+id).addEventListener('click',()=>setAnswer('no'));for(const id of ['msgBtn','shareMsgBtn'])$('#'+id).addEventListener('click',openMessage);$('#messageCancel').addEventListener('click',closeMessage);$('#messageSend').addEventListener('click',sendMessage);$('#studentMessageInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
+
+async function load(){
+ try{
+  session=await api(isClassUrl?`/api/class/${classCode}/public`:`/api/session/${sid}/public`);sid=session.session_id;
+  $('#joinTitle').textContent=session.title||'授業に参加 / Join Class';if(saved){$('#studentId').value=saved.student_id||'';$('#surname').value=saved.surname||'';$('#givenName').value=saved.given_name||'';}populateSeats();try{iceServers=(await api('/api/config')).iceServers||[]}catch{iceServers=[]}
+ }catch(e){$('.join-card').innerHTML=`<h1>参加できません / Unable to join</h1><p>${e.message}</p>`}
+}
+
+function populateSeats(){
+ const map=$('#studentSeatMap'),L=session.layout;map.innerHTML='';
+ if(L.type==='round_tables'){
+   map.classList.add('student-round-map');map.style.gridTemplateColumns=`repeat(${L.table_cols||3},1fr)`;
+   const tables=[...(L.tables||[])].sort((a,b)=>b.row-a.row||b.col-a.col); // 180° from teacher view
+   for(const tb of tables){
+     const unit=document.createElement('div');unit.className='student-round-unit';
+     const pos=['left','top','right'];
+     // Rotate the physical view 180 degrees: left/right swap, top becomes bottom.
+     (tb.seats||[]).forEach((n,i)=>{const b=document.createElement('button');b.type='button';b.className=`student-seat table-${i===0?'right':i===1?'bottom':'left'}`;b.textContent=String(n).padStart(2,'0');b.onclick=()=>{document.querySelectorAll('.student-seat').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('#seatSelect').value=n;$('#seatChoice').textContent=`座席 / Seat ${String(n).padStart(2,'0')}`};unit.appendChild(b)});
+     const table=document.createElement('span');table.className='student-round-table';table.textContent='○';unit.appendChild(table);map.appendChild(unit);
+   }
+ }else{
+   map.classList.remove('student-round-map');map.style.gridTemplateColumns=`repeat(${L.cols},1fr)`;
+   const cells=[];for(let r=0;r<L.rows;r++)for(let c=0;c<L.cols;c++)cells.push([r,c]);
+   cells.reverse(); // 180° student view
+   for(const [r,c] of cells){const n=L.seat_map[r][c],b=document.createElement('button');b.type='button';b.className='student-seat'+(n==null?' off':'');b.textContent=n==null?'':String(n).padStart(2,'0');if(n!=null)b.onclick=()=>{document.querySelectorAll('.student-seat').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('#seatSelect').value=n;$('#seatChoice').textContent=`座席 / Seat ${String(n).padStart(2,'0')}`};map.appendChild(b)}
+ }
+ if(saved?.seat_no){const btn=[...map.querySelectorAll('.student-seat')].find(x=>Number(x.textContent)===Number(saved.seat_no));if(btn)btn.click()}
+}
+
+async function requestScreen(){
+  if(!navigator.mediaDevices?.getDisplayMedia){
+    screenStream=null; screenTrack=null;
+    return {supported:false,ok:false};
+  }
+  try{
+    screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:2,max:3},width:{ideal:320},height:{ideal:180}},audio:false});
+    screenTrack=screenStream.getVideoTracks()[0];
+    screenTrack.contentHint='detail';
+    try{await screenTrack.applyConstraints({frameRate:{ideal:2,max:3},width:{ideal:320},height:{ideal:180}});}catch{}
+    screenTrack.addEventListener('ended',async()=>{
+      screenTrack=null; screenStream=null;
+      updateShareState(false);
+      if(screenSender){ try{await screenSender.replaceTrack(null);}catch{} }
+      // Keep the peer connection alive so teacher presentation can still be received.
+    });
+    $('#selfPreview').srcObject=screenStream; updateShareState(true);
+    return {supported:true,ok:true};
+  }catch(e){
+    screenStream=null; screenTrack=null; updateShareState(false);
+    return {supported:true,ok:false,error:e};
+  }
+}
+
+function updateShareState(ok){
+  $('#shareText').textContent=ok?'画面共有中 / Screen sharing':'画面共有停止 / Screen sharing stopped';
+  $('#shareDot').style.color=ok?'var(--ok)':'var(--danger)';
+  $('#resumeShare').classList.toggle('hidden',ok);
+  sendWs({type:'share_state',active:!!ok});
+}
+
+
+function detectDevice(){
+  const ua=navigator.userAgent||'';
+  const ipad=/iPad/i.test(ua)||(/Macintosh/i.test(ua)&&navigator.maxTouchPoints>1);
+  const android=/Android/i.test(ua);
+  const tablet=ipad || (android && !/Mobile/i.test(ua));
+  if(ipad) return {type:'tablet',label:'iPad',fallback:true};
+  if(tablet) return {type:'tablet',label:'Android tablet',fallback:true};
+  return {type:'desktop',label:'PC',fallback:false};
+}
+const deviceInfo=detectDevice();
+document.body.dataset.deviceType=deviceInfo.type;
+
+async function join(){
+  const student_id=$('#studentId').value.trim();
+  const surname=$('#surname').value.trim();const given_name=$('#givenName').value.trim();
+  const seat_no=Number($('#seatSelect').value);
+  if(!/^[A-Za-z0-9]+$/.test(student_id)){toast('学籍番号は半角英数字で入力してください / Enter the Student ID using ASCII letters and numbers only.');return;}if(!surname||!given_name||!seat_no){toast('学籍番号・姓・名・座席番号を入力してください / Enter your Student ID, family name, given name, and seat number.');return;}
+  $('#joinBtn').disabled=true; $('#joinBtn').textContent='準備中… / Preparing…';
+  const cap=await requestScreen();
+  if(!cap.supported && !deviceInfo.fallback){
+    toast('この端末のブラウザでは画面全体を共有できないため、参加できません。 / This browser cannot share the required screen, so you cannot join Classroom View.',7000);
+    $('#joinBtn').disabled=false; $('#joinBtn').textContent='参加・画面共有開始 / Join & Share Screen';
+    return;
+  }
+  if(cap.supported && !cap.ok && !deviceInfo.fallback){
+    toast('授業に参加するには画面共有を開始してください。 / Start screen sharing to join the class.',6000);
+    $('#joinBtn').disabled=false; $('#joinBtn').textContent='参加・画面共有開始 / Join & Share Screen';
+    return;
+  }
+  if(deviceInfo.fallback && !cap.ok){
+    toast('タブレット代替モードで参加します。画面共有は教師側で別経路を使用できます。 / Joining in tablet fallback mode. Screen sharing may use a separate teacher-side route.',7000);
+  }
+  try{
+    const endpoint=isClassUrl?`/api/class/${classCode}/join`:`/api/session/${sid}/join`;const data=await api(endpoint,{method:'POST',body:JSON.stringify({student_id,surname,given_name,seat_no,device_type:deviceInfo.type,device_label:deviceInfo.label,share_capability:cap.ok?'web':(deviceInfo.fallback?'external':'none'),participant_id:saved?.participant_id,participant_token:saved?.participant_token})});
+    participantId=data.participant_id; participantToken=data.participant_token;
+    saved={participant_id:participantId,participant_token:participantToken,student_id:student_id.toUpperCase(),surname,given_name,seat_no};
+    localStorage.setItem(`a10_student_${classCode||sid}`,JSON.stringify(saved));
+    $('#joinScreen').classList.add('hidden'); $('#studentApp').classList.remove('hidden'); if(deviceInfo.fallback&&!cap.ok){$('#shareText').textContent='代替タブレットモード / Tablet fallback mode';$('#shareDot').style.color='var(--warn, #b36f0b)';$('#resumeShare').classList.add('hidden');}
+    connectWs();
+  }catch(e){
+    toast(`参加できません / Unable to join: ${e.message}`,5000); $('#joinBtn').disabled=false; $('#joinBtn').textContent='参加・画面共有開始 / Join & Share Screen';
+  }
+}
+
+function connectWs(){
+  if(!participantId || !participantToken)return;
+  if(ws && (ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;
+  ws=new WebSocket(wsUrl());
+  ws.onopen=()=>{
+    if(reconnectTimer)clearTimeout(reconnectTimer);
+    if(heartbeatTimer)clearInterval(heartbeatTimer);
+    sendWs({type:'share_state',active:!!screenTrack});
+    sendWs({type:'heartbeat'});
+    heartbeatTimer=setInterval(()=>sendWs({type:'heartbeat'}),2000);
+  };
+  ws.onmessage=async ev=>{
+    const msg=JSON.parse(ev.data);
+    if(msg.type==='welcome'){
+      teacherPresent=!!msg.teacher_present; teacherShareActive=!!msg.teacher_share_active;
+      if(teacherPresent) await ensurePeer(true);
+    }else if(msg.type==='teacher_presence'){
+      teacherPresent=!!msg.present;
+      if(teacherPresent) await ensurePeer(true); else closePeerAndTeacherView();
+    }else if(msg.type==='signal') await handleSignal(msg.data);
+    else if(msg.type==='quality') await applyQuality(msg.mode);
+    else if(msg.type==='teacher_message') showTeacherMessage(msg.text);
+    else if(msg.type==='teacher_share_state'){
+      teacherShareActive=!!msg.active; updateTeacherShareVisibility();
+    }else if(msg.type==='answer_reset'){
+      answer=''; updateControls();
+    }else if(msg.type==='layout_updated'){
+      session=msg.session;
+    }else if(msg.type==='session_ended'){
+      document.body.dataset.ended='1';
+      if(heartbeatTimer)clearInterval(heartbeatTimer);
+      if(reconnectTimer)clearTimeout(reconnectTimer);
+      if(pc){try{pc.close();}catch{} pc=null;}
+      screenSender=null;
+      localStorage.removeItem(`a10_student_${classCode||sid}`);
+      document.body.innerHTML='<div style="display:grid;place-items:center;height:100%;font-family:sans-serif"><div><h2>授業は終了しました / Class has ended</h2><p>この画面を閉じてください。 / You may close this window.</p></div></div>';
+    }
+  };
+  ws.onclose=()=>{
+    if(heartbeatTimer)clearInterval(heartbeatTimer);
+    heartbeatTimer=null;
+    if(document.body.dataset.ended)return;
+    reconnectTimer=setTimeout(connectWs,1200);
+  };
+}
+
+async function ensurePeer(forceOffer=false){
+  if(pc && ['closed','failed'].includes(pc.connectionState)){
+    try{pc.close();}catch{}
+    pc=null; screenSender=null;
+  }
+  if(!pc){
+    pc=new RTCPeerConnection({iceServers});
+    const transceiver=pc.addTransceiver('video',{direction:'sendrecv'});
+    screenSender=transceiver.sender;
+    if(screenTrack){ try{await screenSender.replaceTrack(screenTrack);}catch{} }
+    pc.onicecandidate=e=>{if(e.candidate)sendWs({type:'signal',data:{candidate:e.candidate}});};
+    pc.ontrack=e=>{
+      const stream=e.streams[0]||new MediaStream([e.track]);
+      $('#teacherVideo').srcObject=stream; updateTeacherShareVisibility(true);
+    };
+  }else if(screenTrack && screenSender && screenSender.track!==screenTrack){
+    try{await screenSender.replaceTrack(screenTrack);}catch{}
+  }
+  if(!forceOffer && pc.localDescription) return;
+  if(pc.signalingState!=='stable') return;
+  try{
+    const offer=await pc.createOffer(forceOffer?{iceRestart:true}:undefined);
+    await pc.setLocalDescription(offer);
+    sendWs({type:'signal',data:{description:pc.localDescription}});
+  }catch(e){console.warn(e);}
+}
+
+async function handleSignal(data){
+  if(!pc) await ensurePeer(false);
+  try{
+    if(data.description){
+      const d=data.description;
+      if(d.type==='offer'){
+        if(pc.signalingState!=='stable'){try{await pc.setLocalDescription({type:'rollback'});}catch{}}
+        await pc.setRemoteDescription(d); const a=await pc.createAnswer(); await pc.setLocalDescription(a); sendWs({type:'signal',data:{description:pc.localDescription}});
+      }else if(d.type==='answer' && pc.signalingState==='have-local-offer') await pc.setRemoteDescription(d);
+    }else if(data.candidate){try{await pc.addIceCandidate(data.candidate);}catch{}}
+  }catch(e){console.warn('signal',e);}
+}
+
+function closePeerAndTeacherView(){
+  if(pc){try{pc.close();}catch{} pc=null;}
+  screenSender=null;
+  teacherShareActive=false; $('#teacherVideo').srcObject=null; $('#teacherShare').classList.add('hidden');
+}
+
+async function applyQuality(mode){
+  if(!screenTrack)return;
+  try{
+    if(mode==='focus') await screenTrack.applyConstraints({width:{ideal:1280},height:{ideal:720},frameRate:{ideal:10,max:12}});
+    else await screenTrack.applyConstraints({width:{ideal:320},height:{ideal:180},frameRate:{ideal:2,max:3}});
+  }catch{}
+}
+
+function updateTeacherShareVisibility(forceTrack=false){
+  const hasTrack=!!$('#teacherVideo').srcObject;
+  const show=(teacherShareActive && hasTrack) || (forceTrack && teacherShareActive);
+  $('#teacherShare').classList.toggle('hidden',!show);
+}
+
+function showTeacherMessage(text){
+  const box=$('#teacherMessage'); box.textContent=text; box.classList.remove('hidden'); toast(`教師 / Teacher: ${text}`,5000);
+  clearTimeout(showTeacherMessage.timer); showTeacherMessage.timer=setTimeout(()=>box.classList.add('hidden'),12000);
+}
+
+function sendState(){sendWs({type:'state',hand,answer});}
+function updateControls(){
+  for(const id of ['handBtn','shareHandBtn']) $("#"+id).classList.toggle('active',hand);
+  for(const id of ['yesBtn','shareYesBtn']) $("#"+id).classList.toggle('active',answer==='yes');
+  for(const id of ['noBtn','shareNoBtn']) $("#"+id).classList.toggle('active',answer==='no');
+}
+function toggleHand(){hand=!hand;updateControls();sendState();}
+function setAnswer(v){answer=answer===v?'':v;updateControls();sendState();}
+function openMessage(){ $('#messageModal').classList.remove('hidden'); $('#studentMessageInput').focus(); }
+function closeMessage(){ $('#messageModal').classList.add('hidden'); }
+function sendMessage(){const text=$('#studentMessageInput').value.trim();if(text){sendWs({type:'student_message',text});toast('教師へ送信しました / Message sent to teacher');$('#studentMessageInput').value='';}closeMessage();}
+
+async function resumeShare(){
+  const cap=await requestScreen();
+  if(!cap.ok) return;
+  if(pc && screenSender){
+    try{await screenSender.replaceTrack(screenTrack);}catch{}
+  }else if(teacherPresent){
+    await ensurePeer(true);
+  }
+}
+
+$('#joinBtn').addEventListener('click',join);
+$('#resumeShare').addEventListener('click',resumeShare);
+for(const id of ['handBtn','shareHandBtn']) $('#'+id).addEventListener('click',toggleHand);
+for(const id of ['yesBtn','shareYesBtn']) $('#'+id).addEventListener('click',()=>setAnswer('yes'));
+for(const id of ['noBtn','shareNoBtn']) $('#'+id).addEventListener('click',()=>setAnswer('no'));
+for(const id of ['msgBtn','shareMsgBtn']) $('#'+id).addEventListener('click',openMessage);
+$('#messageCancel').addEventListener('click',closeMessage);
+$('#messageSend').addEventListener('click',sendMessage);
+$('#studentMessageInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
+
 await load();

@@ -1,25 +1,40 @@
 # CHANGELOG
 
-## v1.4 - 2026-09-22
-- Persistent user data separated from application files.
-- Legacy state migration and backup/restore added.
-- Participation URL made primary, with copy and secondary QR display.
-- Bottom-center lectern area with class title and clock.
-- Front/rear classroom orientation switching.
-- Two-step class-end confirmation retained.
-- esaKITs branding and copyright display added.
-- Non-commercial public-release license added.
+## v1.0 - 2026-09-21
 
-## v1.3
-- Teacher 11-inch landscape tablet support.
-- Student tablet fallback participation.
-- Device type and external-share waiting state.
+- v0.1を基礎にClass/Session永続モデルを追加
+- 固定学生URL `/class/<code>` を追加
+- デフォルト座席を実教室型45席へ変更
+- 学生座席表を180°反転表示
+- 最大12×12、縦横通路最大11のレイアウト編集を追加
+- 使用不可位置、自動採番（縦/横・左右開始）を追加
+- 重複座席を許可し教師側警告を追加
+- 教師による座席番号修正を追加
+- 学籍番号ASCII英数字検証/大文字化、姓/名カタカナ分離
+- 教室表示/空席縮小/参加者のみを追加
+- Class単位の表示項目設定を追加
+- 入退室/再接続イベント、CSV出力を追加
+- 座席全体PNG保存（授業名・ローカル日時スタンプ）を追加
+- v0.1のWebRTC/WebSocket、挙手、Yes/No、短信、教師共有、heartbeat、再接続、プライバシー保護を維持
 
-## v1.2
-- Student-side Japanese/English bilingual UI.
 
 ## v1.1
-- Three-seat round-table layout support.
+- 座席レイアウトに「丸テーブル型（3人掛け）」を追加。
+- 標準プリセット: 2段×3列=6卓・18席。各卓は左下→上→右下で採番。
+- 教師画面・学生180°反転表示・PNG保存に丸テーブル型を対応。
+- 通常教室型45席は従来どおり利用可能。
 
-## v1.0
-- Persistent Class/Session model, fixed class URL, editable seat layout, duplicate-seat warning, display modes, CSV logs and whole-class PNG snapshot.
+
+## v1.2
+- 学生側UIを日本語／英語の併記に変更。
+- 参加フォーム、座席選択、画面共有状態、挙手、短信、教師画面、エラー／終了メッセージを日英併記。
+- 教師側UIは日本語のまま維持。
+
+## v1.3
+- 教師側を11インチ級・横向きタブレットの正式対応対象に追加。
+- タッチ操作向けにツールバー、ボタン、モーダル、座席編集、丸テーブル表示をレスポンシブ調整。
+- 学生側も11インチ級・横向きタブレットUIに対応。
+- 学生端末を PC / iPad / Android tablet として自動判別し、参加者情報へ端末種別を保持。
+- PCは従来どおりブラウザ画面共有を基本とする。
+- iPad等でWeb画面共有APIが利用できない場合は「代替タブレットモード」で参加可能。教師側に端末種別と「外部共有待機」を表示。
+- 将来のAirPlay等の外部受信映像を参加者へ関連付けるため、share_capability を参加者モデルに追加。
