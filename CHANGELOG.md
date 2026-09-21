@@ -1,40 +1,38 @@
 # CHANGELOG
 
-## v1.0 - 2026-09-21
+## v1.5-cost-safe (development) - 2026-09-22
 
-- v0.1を基礎にClass/Session永続モデルを追加
-- 固定学生URL `/class/<code>` を追加
-- デフォルト座席を実教室型45席へ変更
-- 学生座席表を180°反転表示
-- 最大12×12、縦横通路最大11のレイアウト編集を追加
-- 使用不可位置、自動採番（縦/横・左右開始）を追加
-- 重複座席を許可し教師側警告を追加
-- 教師による座席番号修正を追加
-- 学籍番号ASCII英数字検証/大文字化、姓/名カタカナ分離
-- 教室表示/空席縮小/参加者のみを追加
-- Class単位の表示項目設定を追加
-- 入退室/再接続イベント、CSV出力を追加
-- 座席全体PNG保存（授業名・ローカル日時スタンプ）を追加
-- v0.1のWebRTC/WebSocket、挙手、Yes/No、短信、教師共有、heartbeat、再接続、プライバシー保護を維持
+- Added zero-author-billing as a mandatory public-release requirement.
+- Prohibited author-billable hosting, database, signaling, TURN/SFU, API and storage dependencies for the free public edition.
+- Defined GitHub Pages/static frontend as the preferred public delivery model.
+- Defined teacher-device local persistence and JSON backup as the target durable-data model.
+- Added hostile-public-traffic assumptions and Cost Safety Test release gates.
+- Marked signaling, NAT/STUN/TURN behavior, university-network compatibility, and 40–48-user operation as UNVERIFIED until directly tested.
+- Retained v1.4 as the functional reference; no destructive replacement of main during the architecture migration.
 
+## v1.4 - 2026-09-21
 
-## v1.1
-- 座席レイアウトに「丸テーブル型（3人掛け）」を追加。
-- 標準プリセット: 2段×3列=6卓・18席。各卓は左下→上→右下で採番。
-- 教師画面・学生180°反転表示・PNG保存に丸テーブル型を対応。
-- 通常教室型45席は従来どおり利用可能。
-
-
-## v1.2
-- 学生側UIを日本語／英語の併記に変更。
-- 参加フォーム、座席選択、画面共有状態、挙手、短信、教師画面、エラー／終了メッセージを日英併記。
-- 教師側UIは日本語のまま維持。
+- Added esaKITs / Enhanced Smart AI Kits branding and copyright footer.
+- Added teacher-desk class title and clock.
+- Added manual front/rear classroom orientation.
+- Changed join presentation to URL-first with copy and secondary QR.
+- Added JSON backup/export-import support.
+- Kept v1.4 Python/WebSocket architecture as the local/reference implementation.
 
 ## v1.3
-- 教師側を11インチ級・横向きタブレットの正式対応対象に追加。
-- タッチ操作向けにツールバー、ボタン、モーダル、座席編集、丸テーブル表示をレスポンシブ調整。
-- 学生側も11インチ級・横向きタブレットUIに対応。
-- 学生端末を PC / iPad / Android tablet として自動判別し、参加者情報へ端末種別を保持。
-- PCは従来どおりブラウザ画面共有を基本とする。
-- iPad等でWeb画面共有APIが利用できない場合は「代替タブレットモード」で参加可能。教師側に端末種別と「外部共有待機」を表示。
-- 将来のAirPlay等の外部受信映像を参加者へ関連付けるため、share_capability を参加者モデルに追加。
+
+- Added teacher support for approximately 11-inch landscape tablets.
+- Added touch-oriented responsive controls.
+- Added student tablet fallback/device metadata.
+
+## v1.2
+
+- Added Japanese/English student UI.
+
+## v1.1
+
+- Added 2×3 round-table layout with 18 seats.
+
+## v1.0
+
+- Added persistent Class/Session model, fixed class URL, 45-seat default classroom, layout editor, display modes, logs/CSV, PNG snapshot, and existing realtime classroom functions.
