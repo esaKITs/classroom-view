@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>esaKITs / Classroom View — Student</title>
+<link rel="stylesheet" href="/static/common.css">
+<link rel="stylesheet" href="/static/student.css">
+</head>
+<body>
+<div id="joinScreen" class="join-screen">
+  <div class="join-card">
+    <div class="brand"><strong>esaKITs</strong><span>Enhanced Smart AI Kits</span></div>
+    <h1 id="joinTitle">授業に参加 / Join Class</h1>
+    <div class="field"><label for="studentId">学籍番号 / Student ID</label><input id="studentId" autocomplete="off"></div>
+    <div class="row"><div class="field" style="flex:1"><label for="surname">姓（カタカナ） / Family Name (Katakana)</label><input id="surname" autocomplete="off"></div><div class="field" style="flex:1"><label for="givenName">名（カタカナ） / Given Name (Katakana)</label><input id="givenName" autocomplete="off"></div></div>
+    <div class="field"><label>座席番号 / Seat Number</label><div id="studentSeatMap" class="student-seat-map"></div><input id="seatSelect" type="hidden"><div id="seatChoice" class="muted">座席を選択してください / Select your seat</div></div>
+    <button id="joinBtn" class="icon-btn primary">参加・画面共有開始 / Join & Share Screen</button>
+    <p id="joinHelp" class="muted">画面共有の確認が表示されたら、授業で使用する画面を選択してください。 / When prompted, select the screen you will use for class.</p>
+  </div>
+</div>
+
+<main id="studentApp" class="student-app hidden">
+  <section class="self-panel">
+    <video id="selfPreview" autoplay playsinline muted></video>
+    <div class="share-state"><span id="shareDot">●</span> <span id="shareText">画面共有中 / Screen sharing</span></div>
+    <button id="resumeShare" class="icon-btn hidden">画面共有を再開 / Resume sharing</button>
+  </section>
+  <div id="teacherMessage" class="teacher-message hidden"></div>
+  <nav class="student-controls">
+    <button id="handBtn" class="student-btn">🙋 挙手 / Raise Hand</button>
+    <button id="yesBtn" class="student-btn">Yes</button>
+    <button id="noBtn" class="student-btn">No</button>
+    <button id="msgBtn" class="student-btn">短信 / Message</button>
+  </nav>
+</main>
+
+<div id="teacherShare" class="teacher-share hidden">
+  <video id="teacherVideo" autoplay playsinline></video>
+  <div class="teacher-share-tag">教師画面 / Teacher Screen</div>
+  <nav class="teacher-share-controls">
+    <button id="shareHandBtn" class="student-btn">🙋</button>
+    <button id="shareYesBtn" class="student-btn">Yes</button>
+    <button id="shareNoBtn" class="student-btn">No</button>
+    <button id="shareMsgBtn" class="student-btn">短信 / Message</button>
+  </nav>
+</div>
+
+<div id="messageModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2>教師へ短信 / Message Teacher</h2>
+    <div class="field"><label for="studentMessageInput">メッセージ / Message</label><input id="studentMessageInput" maxlength="300" placeholder="短いメッセージ / Short message"></div>
+    <div class="row end"><button id="messageCancel" class="icon-btn">閉じる / Close</button><button id="messageSend" class="icon-btn primary">送信 / Send</button></div>
+  </div>
+</div>
+<footer class="product-footer student-footer">© 2026 Tetsuya Esaki / esaKITs — Enhanced Smart AI Kits · Non-Commercial License</footer><div id="toasts" class="toast-stack"></div>
+<script type="module" src="/static/student.js"></script>
+</body>
+</html>
